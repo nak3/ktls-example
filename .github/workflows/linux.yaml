@@ -38,6 +38,14 @@ jobs:
           #          ARCH: "${{ matrix.arch }}"
           #          CC: "${{ matrix.compiler }}"
       
+      - name: modprobe
+        working-directory: ktls-example
+        run: modprobe tls
+
       - name: make
         working-directory: ktls-example
         run: make
+
+      - name: make test
+        working-directory: ktls-example
+        run: make test
