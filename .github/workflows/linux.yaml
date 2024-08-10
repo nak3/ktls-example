@@ -1,0 +1,42 @@
+name: "Linux"
+
+on:
+  push: {}
+  pull_request: {}
+  schedule:
+    - cron: "0 0 * * *" # At 00:00 daily.
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  build_and_test:
+    strategy:
+      fail-fast: false
+      matrix:
+        #arch: ["native", "arm32", "arm64", "mingw32", "mingw64", "mips32", "mips64"]
+        compiler: ["gcc"]
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+        with:
+          path: ktls-example
+
+      - name: "Checkout OpenSSL"
+        uses: actions/checkout@v4
+        with:
+          repository: openssl/openssl
+          path: openssl
+
+          #      - name: "Build OpenSSL v3"
+          #        run: |
+          #          ./config enable-ktls
+          #          make
+          #        env:
+          #          ARCH: "${{ matrix.arch }}"
+          #          CC: "${{ matrix.compiler }}"
+      
+      - name: make
+        run: make

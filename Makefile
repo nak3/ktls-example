@@ -13,10 +13,10 @@ LIB = lib/libktls.a
 
 OPENSSLDIR = ../openssl
 
-CFLAGS  += -Wall -Werror -g -O2 -I$(OPENSSLDIR)/include -I./include
-LDFLAGS += -L$(OPENSSLDIR) -lssl -lcrypto
-#CFLAGS  += -Wall -Werror -g -O2 $(shell pkg-config --cflags $(REQ)) -I./include
-#LDFLAGS += $(shell pkg-config --libs $(REQ))
+#CFLAGS  += -Wall -Werror -g -O2 -I$(OPENSSLDIR)/include -I./include
+#LDFLAGS += -L$(OPENSSLDIR) -lssl -lcrypto
+CFLAGS  += -Wall -Werror -g -O2 $(shell pkg-config --cflags $(REQ)) -I./include
+LDFLAGS += $(shell pkg-config --libs $(REQ))
 
 .PHONY: all clean lint test $(SUBDIR)
 
