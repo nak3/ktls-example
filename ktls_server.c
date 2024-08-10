@@ -12,10 +12,12 @@ static void serverlet(int client, SSL* ssl)/* Serve the connection -- threadable
 		goto end;
 	}
 
+#if OPENSSL_VERSION_NUMBER <= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER)
 	if (setup_ktls(client, ssl) < 0) {
 		perror("setup_ktls failed");
 		goto end;
 	}
+#endif
 
 	/* recv request */
 	bytes = SSL_read(ssl, buf, sizeof(buf));
@@ -55,7 +57,9 @@ static void ssl_main_server(int port)
 	if (load_certificates(ctx, CRT_PEM, KEY_PEM) < 0) goto end;
 
 	/* set cipher list */
-	if (SSL_CTX_set_cipher_list(ctx, "ECDH-ECDSA-AES128-GCM-SHA256") == 0) goto end;
+	if (SSL_CTX_set_ciphersuites(ctx, "TLS_AES_128_GCM_SHA256") == 0) goto end;
+
+	SSL_CTX_set_options(ctx, SSL_OP_ENABLE_KTLS);
 
 	/* create server socket */
 	int server = create_ktls_server(port);

@@ -37,7 +37,10 @@ int main(int argv, char* argc[])
 
 	SSL_library_init();
 	OpenSSL_add_all_algorithms();
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L && !defined(LIBRESSL_VERSION_NUMBER)
+#else
 	ERR_load_BIO_strings();
+#endif
 	ERR_load_crypto_strings();
 
 	/* load all error messages */
@@ -76,15 +79,15 @@ int main_tls_client()
 	SSL *ssl = NULL;
 	int server = 0;
 
-	if ( (ctx = SSL_CTX_new(SSLv23_client_method())) == NULL) {
+	if ( (ctx = SSL_CTX_new(TLS_client_method())) == NULL) {
    		printf("Unable to create a new SSL context structure.\n");
 		exit(-1);
 	}
 
-	SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2);
+//	SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2);
 
 	// Force gcm(aes) mode
-	SSL_CTX_set_cipher_list(ctx, "ECDH-ECDSA-AES128-GCM-SHA256");
+	SSL_CTX_set_ciphersuites(ctx, "TLS_AES_128_GCM_SHA256");
 
 	ssl = SSL_new(ctx);
 

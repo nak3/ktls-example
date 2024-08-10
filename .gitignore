@@ -1,0 +1,13 @@
+*.o
+*/*.a
+af_alg
+af_alg_hash
+ktls_send
+ktls_sendfile
+ktls_server
+ktls_splice
+ssl_client
+ssl_server
+ssl_sslwrite
+.TMP_ktls
+.dd.test

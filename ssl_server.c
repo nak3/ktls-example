@@ -65,7 +65,10 @@ void init_openssl()
 	SSL_library_init();
 	SSL_load_error_strings();	
 	ERR_load_crypto_strings();
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L && !defined(LIBRESSL_VERSION_NUMBER)
+#else
 	ERR_load_BIO_strings();
+#endif
 	OpenSSL_add_ssl_algorithms();
 }
 
@@ -79,7 +82,7 @@ SSL_CTX* init_server_ctx(void)
 	const SSL_METHOD *method = NULL;
 	SSL_CTX *ctx = NULL;
 
-	method = SSLv23_server_method();
+	method = TLS_server_method();
 
 	ctx = SSL_CTX_new(method);
 	if (!ctx) {

@@ -15,7 +15,10 @@ void init_openssl()
 	SSL_library_init();
 	SSL_load_error_strings();
 	ERR_load_crypto_strings();
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L && !defined(LIBRESSL_VERSION_NUMBER)
+#else
 	ERR_load_BIO_strings();
+#endif
 	OpenSSL_add_ssl_algorithms();
 }
 
@@ -29,7 +32,7 @@ SSL_CTX* init_server_ctx(void)
 	const SSL_METHOD *method = NULL;
 	SSL_CTX *ctx = NULL;
 
-	method = SSLv23_server_method();
+	method = TLS_server_method();
 
 	ctx = SSL_CTX_new(method);
 	if (!ctx) {
@@ -62,8 +65,10 @@ end:
 	return rc;
 }
 
+#if OPENSSL_VERSION_NUMBER <= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER)
 int setup_ktls(int client, SSL *ssl)
 {
+
 	int rc = -1;
 	struct tls12_crypto_info_aes_gcm_128 crypto_info;
 
@@ -97,6 +102,7 @@ int setup_ktls(int client, SSL *ssl)
 end:
 	return rc;
 }
+#endif
 
 int create_ktls_server(int port)
 {
@@ -155,10 +161,14 @@ int create_connection(char *host, int port)
 	addr.sin_port = htons(port);
 	addr.sin_addr.s_addr = inet_addr(host);
 
+	printf("connecting to %s:%d\n", host, port);
+
 	rc = connect(fd, (struct sockaddr *) &addr, sizeof(struct sockaddr_in));
 	if (rc < 0) {
 		perror("Connect: ");
 		goto end;
+	} else {
+		printf("connected\n");
 	}
 end:
 	if (rc < 0 && fd >= 0) {
@@ -389,23 +399,30 @@ int checksum(char *file1, char *file2)
 	f2 = fopen(file2, "rb");
 	if (!f2) goto end;
 
-	MD5_CTX md5_ctx;
-	MD5_Init(&md5_ctx);
+	EVP_MD_CTX *md5_ctx;
+
+	md5_ctx = EVP_MD_CTX_new();
+	EVP_DigestInit_ex(md5_ctx, EVP_md5(), NULL);
 
 	size_t bytes = 0;
 	unsigned char buf[BUFSIZ] = {};
 	while ((bytes = fread (buf, 1, sizeof(buf), f1)) != 0) {
-		MD5_Update(&md5_ctx, buf, bytes);
+		EVP_DigestUpdate(md5_ctx, buf, bytes);
 	}
-	MD5_Final(c1, &md5_ctx);
+
+	EVP_DigestFinal_ex(md5_ctx, c1, NULL);
+	EVP_MD_CTX_free(md5_ctx);
 
 	bzero(&buf, sizeof(buf));
 
-	MD5_Init(&md5_ctx);
+	md5_ctx = EVP_MD_CTX_new();
+	EVP_DigestInit_ex(md5_ctx, EVP_md5(), NULL);
+
 	while ((bytes = fread (buf, 1, sizeof(buf), f2)) != 0) {
-		MD5_Update(&md5_ctx, buf, bytes);
+		EVP_DigestUpdate(md5_ctx, buf, bytes);
 	}
-	MD5_Final(c2, &md5_ctx);
+	EVP_DigestFinal_ex(md5_ctx, c2, NULL);
+	EVP_MD_CTX_free(md5_ctx);
 
 	printf("checksum(%s): ", file1);
 	for(i = 0; i < MD5_DIGEST_LENGTH; i++) printf("%02x", c1[i]);
@@ -488,11 +505,20 @@ void main_server(int port, char *file, int count, int enable_ktls, do_tls tls_se
 	ctx = init_server_ctx();
 	if (!ctx) goto end;
 
-	rc = load_certificates(ctx, CRT_PEM, KEY_PEM);
-	if (rc < 0) goto end;
-
-	rc = SSL_CTX_set_cipher_list(ctx, "ECDH-ECDSA-AES128-GCM-SHA256");
+	rc = SSL_CTX_use_certificate_chain_file(ctx, CRT_PEM);
 	if (rc != 1) goto end;
+
+	rc = SSL_CTX_use_PrivateKey_file(ctx, KEY_PEM, SSL_FILETYPE_PEM);
+	if (rc != 1) goto end;
+
+	//rc = SSL_CTX_set_cipher_list(ctx, "ECDH-ECDSA-AES128-GCM-SHA256");
+	// For TLS 1.2
+//	rc = SSL_CTX_set_cipher_list(ctx, "AES128-GCM-SHA256");
+	// For TLS 1.3
+	rc = SSL_CTX_set_ciphersuites(ctx, "TLS_AES_128_GCM_SHA256");
+	if (rc != 1) goto end;
+
+	SSL_CTX_set_options(ctx, SSL_OP_ENABLE_KTLS);
 
 	server = create_ktls_server(port);
 	if (server < 0) goto end;
@@ -513,10 +539,12 @@ void main_server(int port, char *file, int count, int enable_ktls, do_tls tls_se
 			goto end;
 		}
 
+#if OPENSSL_VERSION_NUMBER <= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER)
 		if (enable_ktls && setup_ktls(client, ssl) < 0) {
 			ERR_print_errors_fp(stderr);
 			goto end;
 		}
+#endif
 
 		rc = tls_send(client, file, ssl);
 		if (rc < 0) goto loop_done;
@@ -542,13 +570,19 @@ void main_client(char *host, int port, char *orig_file)
 
 	init_openssl();
 
-	ctx = SSL_CTX_new(SSLv23_client_method());
+	ctx = SSL_CTX_new(TLS_client_method());
 	if (!ctx) goto end;
 
-	SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2);
+//	SSL_CTX_set_min_proto_version(ctx, TLS1_2_VERSION);
 
-	rc = SSL_CTX_set_cipher_list(ctx, "ECDH-ECDSA-AES128-GCM-SHA256");
+	//rc = SSL_CTX_set_cipher_list(ctx, "ECDH-ECDSA-AES128-GCM-SHA256");
+	// For TLS 1.2
+//	rc = SSL_CTX_set_cipher_list(ctx, "AES128-GCM-SHA256");
+	// For TLS 1.3
+	rc = SSL_CTX_set_ciphersuites(ctx, "TLS_AES_128_GCM_SHA256");
 	if (rc != 1) goto end;
+
+	SSL_CTX_set_options(ctx, SSL_OP_ENABLE_KTLS);
 
 	ssl = SSL_new(ctx);
 	if (!ssl) goto end;
@@ -586,12 +620,14 @@ int main_func(int argc, char *argv[], int enable_ktls, do_tls tls_send)
 	pid = fork();
 
 	if (pid == 0) {
-		sleep(3);
+		printf("main_client\n");
+		sleep(1);
 		for (i=0; i<count; i++) {
 			main_client(host, PORT, file);
 			sleep(1);
 		}
 	} else {
+		printf("main_server\n");
 		main_server(PORT, file, count, enable_ktls, tls_send);
 		if ((pid = wait(&status)) == -1) {
 			perror("wait error");
