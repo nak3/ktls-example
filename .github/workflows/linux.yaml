@@ -39,4 +39,5 @@ jobs:
           #          CC: "${{ matrix.compiler }}"
       
       - name: make
+        working-directory: ktls-example
         run: make
