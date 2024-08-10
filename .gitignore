@@ -11,3 +11,4 @@ ssl_server
 ssl_sslwrite
 .TMP_ktls
 .dd.test
+.dd.ktls.test
