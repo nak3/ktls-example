@@ -49,3 +49,6 @@ jobs:
       - name: make test
         working-directory: ktls-example
         run: make test
+
+      - name: verify
+        run: cat /proc/net/tls_stat # TODO: Verify the number in TlsTxDevice and TlsRxDevice.
