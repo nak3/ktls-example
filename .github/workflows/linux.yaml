@@ -17,7 +17,7 @@ jobs:
       matrix:
         #arch: ["native", "arm32", "arm64", "mingw32", "mingw64", "mips32", "mips64"]
         compiler: ["gcc"]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: "Checkout repository"
         uses: actions/checkout@v4
