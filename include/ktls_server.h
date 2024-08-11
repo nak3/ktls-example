@@ -132,7 +132,6 @@ extern void init_openssl(void);
 extern void clean_openssl(void);
 extern int load_certificates(SSL_CTX* ctx, char *cert_file, char *key_file);
 
-extern int setup_ktls(int client, SSL *ssl);
 extern int create_ktls_server(int port);
 extern int create_connection(char *host, int port);
 

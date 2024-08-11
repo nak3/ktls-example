@@ -12,13 +12,6 @@ static void serverlet(int client, SSL* ssl)/* Serve the connection -- threadable
 		goto end;
 	}
 
-#if OPENSSL_VERSION_NUMBER <= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER)
-	if (setup_ktls(client, ssl) < 0) {
-		perror("setup_ktls failed");
-		goto end;
-	}
-#endif
-
 	/* recv request */
 	bytes = SSL_read(ssl, buf, sizeof(buf));
 	if (bytes < 0) {

@@ -65,45 +65,6 @@ end:
 	return rc;
 }
 
-#if OPENSSL_VERSION_NUMBER <= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER)
-int setup_ktls(int client, SSL *ssl)
-{
-
-	int rc = -1;
-	struct tls12_crypto_info_aes_gcm_128 crypto_info;
-
-	bzero(&crypto_info, sizeof(crypto_info));
-
-	EVP_CIPHER_CTX * write_ctx = ssl->enc_write_ctx;
-	EVP_AES_GCM_CTX* gcm_write = (EVP_AES_GCM_CTX*)(write_ctx->cipher_data);
-
-	unsigned char* key_write = (unsigned char*)(gcm_write->gcm.key);
-	unsigned char* iv_write = gcm_write->iv;
-	unsigned char* seq_number_write = ssl->s3->write_sequence;
-
-	crypto_info.info.version = TLS_1_2_VERSION;
-	crypto_info.info.cipher_type = TLS_CIPHER_AES_GCM_128;
-
-	memcpy(crypto_info.iv, iv_write + 4, TLS_CIPHER_AES_GCM_128_IV_SIZE);
-	memcpy(crypto_info.rec_seq, seq_number_write, TLS_CIPHER_AES_GCM_128_REC_SEQ_SIZE);
-	memcpy(crypto_info.key, key_write, TLS_CIPHER_AES_GCM_128_KEY_SIZE);
-	memcpy(crypto_info.salt, iv_write, TLS_CIPHER_AES_GCM_128_SALT_SIZE);
-
-	/* set ktls */
-	if (setsockopt(client, SOL_TCP, TCP_ULP, "tls", sizeof("tls")) <0) {
-		perror("Unable set TCP_ULP");
-		goto end;
-	}
-	if (setsockopt(client, SOL_TLS, TLS_TX, &crypto_info, sizeof(crypto_info)) < 0) {
-		perror("Unable set TLS_TX");
-		goto end;
-	}
-	rc = 0;
-end:
-	return rc;
-}
-#endif
-
 int create_ktls_server(int port)
 {
 	int rc = -1, reuse = 1;
@@ -511,14 +472,15 @@ void main_server(int port, char *file, int count, int enable_ktls, do_tls tls_se
 	rc = SSL_CTX_use_PrivateKey_file(ctx, KEY_PEM, SSL_FILETYPE_PEM);
 	if (rc != 1) goto end;
 
-	//rc = SSL_CTX_set_cipher_list(ctx, "ECDH-ECDSA-AES128-GCM-SHA256");
 	// For TLS 1.2
 //	rc = SSL_CTX_set_cipher_list(ctx, "AES128-GCM-SHA256");
 	// For TLS 1.3
 	rc = SSL_CTX_set_ciphersuites(ctx, "TLS_AES_128_GCM_SHA256");
 	if (rc != 1) goto end;
 
-	SSL_CTX_set_options(ctx, SSL_OP_ENABLE_KTLS);
+	if (enable_ktls) {
+		SSL_CTX_set_options(ctx, SSL_OP_ENABLE_KTLS);
+	}
 
 	server = create_ktls_server(port);
 	if (server < 0) goto end;
@@ -538,13 +500,6 @@ void main_server(int port, char *file, int count, int enable_ktls, do_tls tls_se
 			ERR_print_errors_fp(stderr);
 			goto end;
 		}
-
-#if OPENSSL_VERSION_NUMBER <= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER)
-		if (enable_ktls && setup_ktls(client, ssl) < 0) {
-			ERR_print_errors_fp(stderr);
-			goto end;
-		}
-#endif
 
 		rc = tls_send(client, file, ssl);
 		if (rc < 0) goto loop_done;
@@ -575,7 +530,6 @@ void main_client(char *host, int port, char *orig_file)
 
 //	SSL_CTX_set_min_proto_version(ctx, TLS1_2_VERSION);
 
-	//rc = SSL_CTX_set_cipher_list(ctx, "ECDH-ECDSA-AES128-GCM-SHA256");
 	// For TLS 1.2
 //	rc = SSL_CTX_set_cipher_list(ctx, "AES128-GCM-SHA256");
 	// For TLS 1.3
