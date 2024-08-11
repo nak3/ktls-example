@@ -30,6 +30,10 @@ jobs:
           repository: openssl/openssl
           path: openssl
 
+      - name: modprobe
+        working-directory: ktls-example
+        run: modprobe tls
+
       # TODO: Use default openssl once Ubuntu's openssl includes this.
       # https://github.com/openssl/openssl/pull/17942
       - name: "Build OpenSSL v3"
@@ -38,10 +42,6 @@ jobs:
           make
         working-directory: openssl
       
-      - name: modprobe
-        working-directory: ktls-example
-        run: modprobe tls
-
       - name: make
         working-directory: ktls-example
         run: make
