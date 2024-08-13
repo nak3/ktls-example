@@ -472,8 +472,11 @@ void main_server(int port, char *file, int count, int enable_ktls, do_tls tls_se
 	rc = SSL_CTX_use_PrivateKey_file(ctx, KEY_PEM, SSL_FILETYPE_PEM);
 	if (rc != 1) goto end;
 
+	SSL_CTX_set_min_proto_version(ctx, TLS1_3_VERSION);
+	SSL_CTX_set_max_proto_version(ctx, TLS1_3_VERSION);
+
 	// For TLS 1.2
-//	rc = SSL_CTX_set_cipher_list(ctx, "AES128-GCM-SHA256");
+	// rc = SSL_CTX_set_cipher_list(ctx, "AES256-GCM-SHA384");
 	// For TLS 1.3
 	rc = SSL_CTX_set_ciphersuites(ctx, "TLS_AES_128_GCM_SHA256");
 	if (rc != 1) goto end;
@@ -528,10 +531,11 @@ void main_client(char *host, int port, char *orig_file)
 	ctx = SSL_CTX_new(TLS_client_method());
 	if (!ctx) goto end;
 
-//	SSL_CTX_set_min_proto_version(ctx, TLS1_2_VERSION);
+	SSL_CTX_set_min_proto_version(ctx, TLS1_3_VERSION);
+	SSL_CTX_set_max_proto_version(ctx, TLS1_3_VERSION);
 
 	// For TLS 1.2
-//	rc = SSL_CTX_set_cipher_list(ctx, "AES128-GCM-SHA256");
+	// rc = SSL_CTX_set_cipher_list(ctx, "AES256-GCM-SHA384");
 	// For TLS 1.3
 	rc = SSL_CTX_set_ciphersuites(ctx, "TLS_AES_128_GCM_SHA256");
 	if (rc != 1) goto end;
