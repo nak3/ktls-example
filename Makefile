@@ -16,7 +16,7 @@ export LD_LIBRARY_PATH := ../openssl/build/lib64/
 export PKG_CONFIG_PATH := ../openssl/build/lib64/pkgconfig
 
 # TODO: Building on github action needs this. why?
-LDFLAGS = -L../openssl
+#LDFLAGS += -L../openssl
 
 CFLAGS  += -Wall -Werror -g -O2 -I./include
 
@@ -25,6 +25,7 @@ CFLAGS  += -Wall -Werror -g -O2 -I./include
 all: $(SUBDIR) $(EXE) $(OBJ)
 
 %:%.c $(SUBDIR)
+	echo $(LDFLAGS)
 	$(CC) $(CFLAGS) $(shell pkg-config --cflags --libs openssl) -o $@ $< $(LIB) $(LDFLAGS)
 
 $(SUBDIR):
