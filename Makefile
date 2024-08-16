@@ -12,8 +12,11 @@ REQ = openssl
 LIB = lib/libktls.a
 
 # TODO: Remove this if you want to use a OpenSSL library on your OS.
-#export LD_LIBRARY_PATH := ../openssl/build/lib64/
+export LD_LIBRARY_PATH := ../openssl/build/lib64/
 export PKG_CONFIG_PATH := ../openssl/build/lib64/pkgconfig
+
+OPENSSLDIR = ../openssl
+LDFLAGS += -L$(OPENSSLDIR) -lssl -lcrypto
 
 CFLAGS  += -Wall -Werror -g -O2 -I./include
 
@@ -22,7 +25,7 @@ CFLAGS  += -Wall -Werror -g -O2 -I./include
 all: $(SUBDIR) $(EXE) $(OBJ)
 
 %:%.c $(SUBDIR)
-	$(CC) $(CFLAGS) $(shell pkg-config --cflags --libs openssl) -o $@ $< $(LIB)
+	$(CC) $(CFLAGS) $(shell pkg-config --cflags --libs openssl) -o $@ $< $(LIB) $(LDFLAGS)
 
 $(SUBDIR):
 	$(MAKE) -C $@ $(MAKECMDGOALS)
