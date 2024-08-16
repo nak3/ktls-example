@@ -11,22 +11,18 @@ LINTFLAGS = --enable=style -j 4
 REQ = openssl
 LIB = lib/libktls.a
 
-OPENSSLDIR = ../openssl
+# TODO: Remove this if you want to use a OpenSSL library on your OS.
+export LD_LIBRARY_PATH := ../openssl/build/lib64/
+export PKG_CONFIG_PATH := ../openssl/build/lib64/pkgconfig
 
-CFLAGS  += -Wall -Werror -g -O2 -I$(OPENSSLDIR)/include -I./include
-LDFLAGS += -L$(OPENSSLDIR) -lssl -lcrypto
-
-# TODO: If you want to use a OpenSSL library on your OS.
-#
-#CFLAGS  += -Wall -Werror -g -O2 $(shell pkg-config --cflags $(REQ)) -I./include
-#LDFLAGS += $(shell pkg-config --libs $(REQ))
+CFLAGS  += -Wall -Werror -g -O2 -I./include
 
 .PHONY: all clean lint test $(SUBDIR)
 
 all: $(SUBDIR) $(EXE) $(OBJ)
 
 %:%.c $(SUBDIR)
-	$(CC) $(CFLAGS) -o $@ $< $(LIB) $(LDFLAGS)
+	$(CC) $(CFLAGS) $(shell pkg-config --cflags --libs openssl) -o $@ $< $(LIB)
 
 $(SUBDIR):
 	$(MAKE) -C $@ $(MAKECMDGOALS)

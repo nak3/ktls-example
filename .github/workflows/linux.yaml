@@ -38,13 +38,16 @@ jobs:
       # https://github.com/openssl/openssl/pull/17942
       - name: "Build OpenSSL v3"
         run: |
-          ./config enable-ktls
-          make
+          mkdir build
+          ./config enable-ktls --prefix=$(pwd)/build --openssldir=$(pwd)/build
+          make -j8
+          make install
         working-directory: openssl
       
       - name: make
         working-directory: ktls-example
-        run: make
+        run: |
+          make
 
       - name: make test
         working-directory: ktls-example
