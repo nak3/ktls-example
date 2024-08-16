@@ -15,9 +15,6 @@ LIB = lib/libktls.a
 export LD_LIBRARY_PATH := ../openssl/build/lib64/
 export PKG_CONFIG_PATH := ../openssl/build/lib64/pkgconfig
 
-# TODO: Building on github action needs this. why?
-#LDFLAGS += -L../openssl
-
 CFLAGS  += -Wall -Werror -g -O2 -I./include
 
 .PHONY: all clean lint test $(SUBDIR)
@@ -25,8 +22,7 @@ CFLAGS  += -Wall -Werror -g -O2 -I./include
 all: $(SUBDIR) $(EXE) $(OBJ)
 
 %:%.c $(SUBDIR)
-	echo $(LDFLAGS)
-	$(CC) $(CFLAGS) $(shell pkg-config --cflags --libs openssl) -o $@ $< $(LIB) $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $< $(LIB) $(shell pkg-config --cflags --libs openssl)
 
 $(SUBDIR):
 	$(MAKE) -C $@ $(MAKECMDGOALS)
