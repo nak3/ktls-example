@@ -15,8 +15,8 @@ LIB = lib/libktls.a
 export LD_LIBRARY_PATH := ../openssl/build/lib64/
 export PKG_CONFIG_PATH := ../openssl/build/lib64/pkgconfig
 
-OPENSSLDIR = ../openssl
-LDFLAGS += -L$(OPENSSLDIR) -lssl -lcrypto
+# TODO: Building on github action needs this. why?
+LDFLAGS = -L../openssl
 
 CFLAGS  += -Wall -Werror -g -O2 -I./include
 
